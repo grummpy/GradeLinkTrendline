@@ -1,0 +1,20 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student B - Penmanship
+Date: Mon, 21 Sep 2026 15:00:00 +0000
+Message-ID: <b-penmanship-0921@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student B
+Subject: Penmanship
+Teacher: Ms. Rivera
+Assignment: Stroke Practice
+Category: Classwork
+Score: 64/100
+Letter: D
+Percent: 64%
+Date: 09/21/2026
+
+Fixture footer b-penmanship-0921.

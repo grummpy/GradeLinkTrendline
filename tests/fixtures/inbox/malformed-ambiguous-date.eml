@@ -1,0 +1,18 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - History
+Date: Thu, 15 Jan 2026 15:00:00 +0000
+Message-ID: <malformed-ambiguous-date@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student A
+Subject: History
+Percent: 60%
+Letter: D
+Date: 03/04/2026
+Assignment: Timeline
+Teacher: Mx. Adler
+
+Fixture footer malformed-ambiguous-date.

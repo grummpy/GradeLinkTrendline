@@ -1,0 +1,22 @@
+# Local observations, reports, and OAuth material. Never commit these.
+/data/
+/secrets/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+dist/
+build/
+
+# Accidental exports and mailbox locks
+*.sqlite
+*.sqlite3
+*.mbox.lock
+gmail_token.json
+client_secret*.json
+credentials.json
+token.json

@@ -1,0 +1,21 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - Math
+Date: Thu, 17 Sep 2026 15:00:00 +0000
+Message-ID: <a-math-0917@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student A
+Course: Math
+Teacher: Ms. Okonkwo
+Assignment: Check-in
+Category: Classwork
+Score: 74/100
+Letter: C
+Percent: 74%
+Date: 2026-09-17
+
+Fixture footer a-math-0917.
+This is a fictional automated alert from Example Academy.

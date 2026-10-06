@@ -1,0 +1,19 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - Science
+Date: Thu, 10 Sep 2026 17:00:00 +0000
+Message-ID: <a-science-multi@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
+MIME-Version: 1.0
+
+Student: Student A
+Subject: Science
+Teacher: Mr. Chen
+
+Assignment: Density Lab | Category: Labs | Score: 14/25 | Letter: F | Percent=
+: 56% | Date: 2026-09-08
+Assignment: Vocabulary | Category: Homework | Score: 7/10 | Letter: C | Perce=
+nt: 70% | Date: 2026-09-10
+
+Fixture footer a-science-multi.
