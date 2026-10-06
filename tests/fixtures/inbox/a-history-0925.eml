@@ -1,0 +1,21 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - History
+Date: Fri, 25 Sep 2026 15:00:00 +0000
+Message-ID: <a-history-0925@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student A
+Course: History
+Teacher: Mx. Adler
+Assignment: Essay Outline
+Category: Essays
+Score: 63/100
+Letter: D
+Percent: 63%
+Date: 2026-09-25
+
+Fixture footer a-history-0925.
+This is a fictional automated alert from Example Academy.

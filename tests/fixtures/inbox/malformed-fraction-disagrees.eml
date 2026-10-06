@@ -1,0 +1,17 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student B - Science
+Date: Sun, 06 Sep 2026 15:00:00 +0000
+Message-ID: <malformed-fraction-disagrees@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student B
+Subject: Science
+Score: 10/20 (40%)
+Date: 2026-09-06
+Assignment: Lab
+Teacher: Mr. Chen
+
+Fixture footer malformed-fraction-disagrees.

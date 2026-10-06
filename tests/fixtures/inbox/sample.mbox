@@ -1,0 +1,44 @@
+From glt-fixtures@example.com Mon Aug 18 12:00:00 2026
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student B - History
+Date: Sat, 03 Oct 2026 15:00:00 +0000
+Message-ID: <mbox-b-history-1003@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student B
+Subject: History
+Teacher: Mx. Adler
+Assignment: Final Outline
+Category: Essays
+Score: 88/100
+Letter: B
+Percent: 88%
+Date: 2026-10-03
+
+Fixture footer mbox-b-history-1003.
+
+From glt-fixtures@example.com Mon Aug 18 12:00:00 2026
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Score notice: Student A - Math
+Date: Thu, 24 Sep 2026 15:00:00 +0000
+Message-ID: <mbox-a-math-0924@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student A
+Subject: Math
+Teacher: Ms. Okonkwo
+Assignment: Exit Ticket
+Category: Classwork
+Score: 71/100
+Letter: C
+Percent: 71%
+Date: 2026-09-24
+
+Fixture footer mbox-a-math-0924.
+

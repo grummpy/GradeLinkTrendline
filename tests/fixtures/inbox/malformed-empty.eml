@@ -1,0 +1,10 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Empty notice
+Date: Mon, 07 Sep 2026 15:00:00 +0000
+Message-ID: <malformed-empty@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+

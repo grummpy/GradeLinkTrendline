@@ -1,0 +1,18 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - Math
+Date: Thu, 03 Sep 2026 18:00:00 +0000
+Message-ID: <malformed-ambiguous-percent@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student: Student A
+Subject: Math
+Percent: 61%
+Percent: 80%
+Date: 2026-09-03
+Assignment: Quiz 4
+Teacher: Ms. Okonkwo
+
+Fixture footer malformed-ambiguous-percent.

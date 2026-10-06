@@ -1,0 +1,19 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student A - Penmanship
+Date: Wed, 09 Sep 2026 15:00:00 +0000
+Message-ID: <a-penmanship-0909@example.com>
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+Student Name: Student A
+Class: Penmanship - Period 2
+Instructor: Ms. Rivera
+Work Item: Weekly Journal
+Grade Category: Classwork
+Points: 62 of 100
+Grade Letter: D
+Recorded On: September 9, 2026
+
+Fixture footer a-penmanship-0909.

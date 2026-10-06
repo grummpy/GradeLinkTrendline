@@ -1,0 +1,24 @@
+From: GradeLink Alerts <alerts@example.com>
+To: Parent <parent@example.com>
+Subject: Low grade alert: Student B - Science
+Date: Tue, 18 Aug 2026 15:00:00 +0000
+Message-ID: <b-science-0818@example.com>
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+MIME-Version: 1.0
+
+<html><body>
+<p>Example Academy fictional alert.</p>
+<table>
+<tr><th>Student Name</th><td>Student B</td></tr>
+<tr><th>Subject</th><td>Science</td></tr>
+<tr><th>Assignment Title</th><td>Lab 1</td></tr>
+<tr><th>Category</th><td>Labs</td></tr>
+<tr><th>Points</th><td>11/20</td></tr>
+<tr><th>Letter Grade</th><td>F</td></tr>
+<tr><th>Percentage</th><td>55%</td></tr>
+<tr><th>Posted</th><td>August 18, 2026</td></tr>
+<tr><th>Teacher</th><td>Mr. Chen</td></tr>
+</table>
+<p>Fixture footer b-science-0818.</p>
+</body></html>
