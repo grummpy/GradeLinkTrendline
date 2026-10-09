@@ -151,6 +151,30 @@ def test_multi_assignment_rows():
     assert "Fixture footer a-science-multi." in lab.unparsed_remainder
 
 
+def test_two_compact_rows_remain_two_source_linked_observations():
+    raw = RawMessage(
+        message_id="<two-compact-rows@example.com>",
+        source="memory",
+        sender="alerts@example.com",
+        subject="alert",
+        message_date=None,
+        body_text=(
+            "Student A | Math | Quiz 1 | Homework | 6/10 | D | 60% | 2026-09-01 | Ms. Rivera\n"
+            "Student A | Math | Quiz 2 | Homework | 7/10 | C | 70% | 2026-09-02 | Ms. Rivera\n"
+        ),
+        body_html="",
+        body_sha256="abc",
+    )
+    observations = parse_message(raw)
+    assert len(observations) == 2
+    assert {item.assignment for item in observations} == {"Quiz 1", "Quiz 2"}
+    assert {item.message_id for item in observations} == {raw.message_id}
+    assert [(item.score, item.points_possible, item.percent) for item in observations] == [
+        (6, 10, 60),
+        (7, 10, 70),
+    ]
+
+
 def test_header_date_is_labeled_when_body_has_none():
     _, observations = _one("a-science-header-date.eml")
     item = observations[0]

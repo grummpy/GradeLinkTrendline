@@ -318,7 +318,9 @@ class ProseAlertPattern:
 
 class CompactRowPattern:
     pattern_id = "compact-row"
-    emits_rows = False
+    # Each pipe-delimited line is a complete observation. Treating these as
+    # ordinary candidates would merge separate assignments in one email.
+    emits_rows = True
 
     def apply(self, raw: RawMessage) -> list[Candidate]:
         found: list[Candidate] = []

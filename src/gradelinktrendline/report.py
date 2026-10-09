@@ -413,7 +413,9 @@ def _csv_safe_frame(frame):
     safe = frame.copy()
     for column in safe.select_dtypes(include="object"):
         safe[column] = safe[column].map(
-            lambda value: "'" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")) else value
+            lambda value: "'" + value
+            if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@"))
+            else value
         )
     return safe
 

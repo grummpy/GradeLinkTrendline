@@ -34,6 +34,14 @@ def test_rolling_average_uses_a_trailing_14_day_window():
     assert averages[2] == (61 + 58) / 2
 
 
+def test_same_day_rolling_averages_are_permutation_invariant():
+    day = date(2026, 9, 1)
+    first = rolling_averages([day, day, day + timedelta(days=1)], [60, 80, 70])
+    second = rolling_averages([day, day + timedelta(days=1), day], [80, 70, 60])
+    assert first == [70, 70, 70]
+    assert second == [70, 70, 70]
+
+
 def test_two_week_windows_count_lows_only():
     origin = date(2026, 9, 1)
     dates = [origin, origin + timedelta(days=7), origin + timedelta(days=14), origin + timedelta(days=20)]
