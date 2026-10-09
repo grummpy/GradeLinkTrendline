@@ -130,11 +130,11 @@ def rolling_averages(
     window_days: int = ROLLING_DAYS,
 ) -> list[float | None]:
     averages: list[float | None] = []
-    for index, end in enumerate(dates):
+    for end in dates:
         start = end - timedelta(days=window_days - 1)
         window = [
             percent
-            for item_date, percent in zip(dates[: index + 1], percents[: index + 1], strict=True)
+            for item_date, percent in zip(dates, percents, strict=True)
             if percent is not None and start <= item_date <= end
         ]
         averages.append(sum(window) / len(window) if window else None)
