@@ -22,13 +22,12 @@ def write_report(rows: list[dict[str, object]], out_dir: Path) -> Analysis:
     analysis = analyze(rows)
     review = [row for row in rows if row.get("needs_review")]
     (out_dir / "index.html").write_text(_dashboard(analysis, review), encoding="utf-8")
-    for student in sorted({item.student for item in analysis.subjects}):
-        slug = _slug(student)
+    for student, slug in _student_slugs(analysis):
         sheet = _printable(student, analysis)
         (out_dir / f"summary-{slug}.html").write_text(sheet, encoding="utf-8")
-    analysis.points_frame.to_csv(out_dir / "observations.csv", index=False)
-    analysis.subjects_frame.to_csv(out_dir / "subjects.csv", index=False)
-    analysis.windows_frame.to_csv(out_dir / "windows.csv", index=False)
+    _csv_safe_frame(analysis.points_frame).to_csv(out_dir / "observations.csv", index=False)
+    _csv_safe_frame(analysis.subjects_frame).to_csv(out_dir / "subjects.csv", index=False)
+    _csv_safe_frame(analysis.windows_frame).to_csv(out_dir / "windows.csv", index=False)
     weekly = "\n\n".join(note.text for note in analysis.weeks)
     if weekly:
         weekly += "\n"
@@ -39,13 +38,14 @@ def write_report(rows: list[dict[str, object]], out_dir: Path) -> Analysis:
 def _dashboard(analysis: Analysis, review: list[dict[str, object]]) -> str:
     generated = date.today().isoformat()
     students = sorted({item.student for item in analysis.subjects})
+    slugs = dict(_student_slugs(analysis))
     sections = []
     if not students and not review:
         sections.append("<p>No observations yet. Run <code>glt ingest</code> on a folder of .eml or .mbox files.</p>")
     for student in students:
         summaries = [item for item in analysis.subjects if item.student == student]
         weeks = [note.text for note in analysis.weeks if note.student == student]
-        slug = _slug(student)
+        slug = slugs[student]
         flag_names = [item.subject for item in summaries if item.repeat_trouble]
         flag_line = ""
         if flag_names:
@@ -390,6 +390,32 @@ def _num(value: object) -> str:
 def _slug(name: str) -> str:
     cleaned = "".join(ch.lower() if ch.isalnum() else "-" for ch in name)
     return "-".join(part for part in cleaned.split("-") if part)
+
+
+def _student_slugs(analysis: Analysis) -> list[tuple[str, str]]:
+    """Stable, collision-free names for report files and dashboard links."""
+    result: list[tuple[str, str]] = []
+    used: set[str] = set()
+    for student in sorted({item.student for item in analysis.subjects}):
+        base = _slug(student) or "student"
+        slug = base
+        number = 2
+        while slug in used:
+            slug = f"{base}-{number}"
+            number += 1
+        used.add(slug)
+        result.append((student, slug))
+    return result
+
+
+def _csv_safe_frame(frame):
+    """Escape only formula-capable text cells; numeric grades remain numeric."""
+    safe = frame.copy()
+    for column in safe.select_dtypes(include="object"):
+        safe[column] = safe[column].map(
+            lambda value: "'" + value if isinstance(value, str) and value.lstrip().startswith(("=", "+", "-", "@")) else value
+        )
+    return safe
 
 
 def esc(value: object) -> str:
