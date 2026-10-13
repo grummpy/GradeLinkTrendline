@@ -115,3 +115,37 @@ def test_review_rows_are_left_out_of_the_series():
         ]
     )
     assert analysis.subjects == []
+
+
+def test_explicit_term_boundaries_never_join_series_or_rolling_windows():
+    analysis = analyze(
+        [
+            {
+                "student": "Student A",
+                "subject": "Math",
+                "observed_on": date(2026, 1, 10),
+                "percent": 40,
+                "letter": "F",
+                "needs_review": False,
+                "message_id": "before",
+            },
+            {
+                "student": "Student A",
+                "subject": "Math",
+                "observed_on": date(2026, 1, 20),
+                "percent": 90,
+                "letter": "A",
+                "needs_review": False,
+                "message_id": "after",
+            },
+        ],
+        term_boundaries=[date(2026, 1, 15)],
+    )
+    assert [item.term for item in analysis.subjects] == [
+        "through 2026-01-14",
+        "from 2026-01-15",
+    ]
+    assert all(item.observation_count == 1 for item in analysis.subjects)
+    assert all(item.slope_per_week is None for item in analysis.subjects)
+    assert all(item.points[0].rolling_avg == item.points[0].percent for item in analysis.subjects)
+    assert set(analysis.points_frame["term"]) == {"through 2026-01-14", "from 2026-01-15"}
