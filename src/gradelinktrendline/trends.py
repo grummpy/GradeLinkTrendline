@@ -36,7 +36,9 @@ def contains_banned_label(text: str) -> bool:
 class Point:
     student: str
     subject: str
+    term: str
     observed_on: date
+    date_source: str | None
     percent: float | None
     rolling_avg: float | None
     is_low: bool
@@ -58,6 +60,7 @@ class WindowCount:
 class SubjectSummary:
     student: str
     subject: str
+    term: str
     repeat_trouble: bool
     repeat_start: date | None
     repeat_end: date | None
@@ -85,6 +88,7 @@ class Analysis:
     points_frame: pd.DataFrame
     subjects_frame: pd.DataFrame
     windows_frame: pd.DataFrame
+    term_boundaries: tuple[date, ...] = ()
 
 
 def classify_low(percent: float | None, letter: str | None) -> bool | None:
@@ -179,15 +183,22 @@ def repeat_trouble(low_dates: list[date]) -> tuple[bool, date | None, date | Non
     return False, None, None, best_count
 
 
-def analyze(rows: list[dict[str, object]]) -> Analysis:
+def analyze(rows: list[dict[str, object]], term_boundaries: list[date] | tuple[date, ...] = ()) -> Analysis:
+    """Analyze confirmed observations without joining across explicit term boundaries.
+
+    Boundaries are caller-supplied dates rather than inferred from grades or gaps.
+    That keeps a report from silently deciding where a school term begins.
+    """
+    boundaries = tuple(sorted(set(term_boundaries)))
     normalized = [_normalize(row) for row in rows]
     confirmed = [row for row in normalized if _usable(row)]
     frame = pd.DataFrame(confirmed)
     subjects: list[SubjectSummary] = []
     if not frame.empty:
         frame["observed_on"] = pd.to_datetime(frame["observed_on"])
-        grouped = frame.groupby(["student", "subject"], sort=True)
-        for (student, subject), group in grouped:
+        frame["term"] = frame["observed_on"].map(lambda stamp: _term_label(stamp.date(), boundaries))
+        grouped = frame.groupby(["student", "subject", "term"], sort=True)
+        for (student, subject, term), group in grouped:
             group = group.sort_values(["observed_on", "message_id"])
             dates = [item.date() for item in group["observed_on"]]
             percents = [None if pd.isna(value) else float(value) for value in group["percent"]]
@@ -200,7 +211,9 @@ def analyze(rows: list[dict[str, object]]) -> Analysis:
                 Point(
                     student=str(student),
                     subject=str(subject),
+                    term=str(term),
                     observed_on=item_date,
+                    date_source=_text(record.get("date_source")),
                     percent=percent,
                     rolling_avg=avg,
                     is_low=is_low,
@@ -224,6 +237,7 @@ def analyze(rows: list[dict[str, object]]) -> Analysis:
                 SubjectSummary(
                     student=str(student),
                     subject=str(subject),
+                    term=str(term),
                     repeat_trouble=flagged,
                     repeat_start=repeat_start,
                     repeat_end=repeat_end,
@@ -237,7 +251,13 @@ def analyze(rows: list[dict[str, object]]) -> Analysis:
                     points=points,
                 )
             )
-    subjects.sort(key=lambda item: (item.student.lower(), _subject_key(item.subject)))
+    subjects.sort(
+        key=lambda item: (
+            item.student.lower(),
+            _subject_key(item.subject),
+            min(point.observed_on for point in item.points),
+        )
+    )
     weeks = _weekly_notes(subjects)
     return Analysis(
         subjects=subjects,
@@ -245,6 +265,7 @@ def analyze(rows: list[dict[str, object]]) -> Analysis:
         points_frame=_points_frame(subjects),
         subjects_frame=_subjects_frame(subjects),
         windows_frame=_windows_frame(subjects),
+        term_boundaries=boundaries,
     )
 
 
@@ -278,7 +299,7 @@ def _weekly_notes(subjects: list[SubjectSummary]) -> list[WeekNote]:
         by_student.setdefault(summary.student, []).append(summary)
     notes: list[WeekNote] = []
     for student, summaries in by_student.items():
-        flags = {item.subject: item.repeat_trouble for item in summaries}
+        flags = {(item.subject, item.term): item.repeat_trouble for item in summaries}
         buckets: dict[date, list[Point]] = {}
         for summary in summaries:
             for point in summary.points:
@@ -300,29 +321,29 @@ def _weekly_notes(subjects: list[SubjectSummary]) -> list[WeekNote]:
     return notes
 
 
-def _week_text(student: str, week_start: date, points: list[Point], flags: dict[str, bool]) -> str:
+def _week_text(student: str, week_start: date, points: list[Point], flags: dict[tuple[str, str], bool]) -> str:
     lines = [f"Week of {week_start.isoformat()}, {student}"]
-    by_subject: dict[str, list[Point]] = {}
+    by_subject: dict[tuple[str, str], list[Point]] = {}
     for point in points:
-        by_subject.setdefault(point.subject, []).append(point)
-    for subject in sorted(by_subject, key=_subject_key):
-        items = sorted(by_subject[subject], key=lambda item: item.observed_on)
+        by_subject.setdefault((point.subject, point.term), []).append(point)
+    for subject, term in sorted(by_subject, key=lambda item: (_subject_key(item[0]), item[1])):
+        items = sorted(by_subject[(subject, term)], key=lambda item: item.observed_on)
         lows = [item for item in items if item.is_low]
         if lows:
             noun = "low-grade alert" if len(lows) == 1 else "low-grade alerts"
-            line = f"{subject}: {len(lows)} {noun} ({_details(lows)})."
-            if flags.get(subject):
-                line += (
+            detail = f"{len(lows)} {noun} ({_details(lows)})."
+            if flags.get((subject, term)):
+                detail += (
                     " This subject has a repeat-trouble flag "
                     "(3 or more low-grade alerts within 21 days)."
                 )
         else:
             noun = "recorded score" if len(items) == 1 else "recorded scores"
-            line = (
-                f"{subject}: {len(items)} {noun} ({_details(items)}), "
+            detail = (
+                f"{len(items)} {noun} ({_details(items)}), "
                 "none under the 70 percent alert line."
             )
-        lines.append(line)
+        lines.append(f"{_series_label(subject, term)}: {detail}")
     lines.append(
         "These counts describe alert emails and recorded scores. "
         "They are not a statement about ability."
@@ -352,7 +373,9 @@ def _points_frame(subjects: list[SubjectSummary]) -> pd.DataFrame:
                 {
                     "student": point.student,
                     "subject": point.subject,
+                    "term": point.term,
                     "observed_on": point.observed_on.isoformat(),
+                    "date_source": point.date_source,
                     "percent": point.percent,
                     "rolling_avg_14d": point.rolling_avg,
                     "is_low": point.is_low,
@@ -373,6 +396,7 @@ def _subjects_frame(subjects: list[SubjectSummary]) -> pd.DataFrame:
         {
             "student": item.student,
             "subject": item.subject,
+            "term": item.term,
             "repeat_trouble": item.repeat_trouble,
             "repeat_start": item.repeat_start.isoformat() if item.repeat_start else None,
             "repeat_end": item.repeat_end.isoformat() if item.repeat_end else None,
@@ -393,6 +417,7 @@ def _windows_frame(subjects: list[SubjectSummary]) -> pd.DataFrame:
         {
             "student": item.student,
             "subject": item.subject,
+            "term": item.term,
             "window_start": window.start.isoformat(),
             "window_end": window.end.isoformat(),
             "low_alerts": window.low_alerts,
@@ -433,6 +458,25 @@ def _as_date(value: object) -> date | None:
     if isinstance(value, str):
         return date.fromisoformat(value[:10])
     return None
+
+
+def _term_label(value: date, boundaries: tuple[date, ...]) -> str:
+    """Return an honest date-range label for caller-declared term boundaries."""
+    if not boundaries:
+        return "All supplied dates"
+    for index, boundary in enumerate(boundaries):
+        if value < boundary:
+            return f"through {(boundary - timedelta(days=1)).isoformat()}"
+        next_boundary = boundaries[index + 1] if index + 1 < len(boundaries) else None
+        if next_boundary is None or value < next_boundary:
+            if next_boundary is None:
+                return f"from {boundary.isoformat()}"
+            return f"{boundary.isoformat()} to {(next_boundary - timedelta(days=1)).isoformat()}"
+    raise AssertionError("each date belongs to a reporting term")
+
+
+def _series_label(subject: str, term: str) -> str:
+    return subject if term == "All supplied dates" else f"{subject} ({term})"
 
 
 def _float_or_none(value: object) -> float | None:

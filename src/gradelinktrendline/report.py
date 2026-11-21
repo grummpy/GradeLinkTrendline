@@ -6,7 +6,7 @@ import html
 from datetime import date
 from pathlib import Path
 
-from gradelinktrendline.trends import Analysis, Point, SubjectSummary, analyze, conversation_prompts
+from gradelinktrendline.trends import Analysis, Point, SubjectSummary, _series_label, analyze, conversation_prompts
 
 _COLORS = {
     "math": "#2F6FED",
@@ -17,9 +17,11 @@ _COLORS = {
 _PALETTE = ["#2F6FED", "#2E9B57", "#E0A100", "#7B5EA7", "#D4654A", "#3A7CA5"]
 
 
-def write_report(rows: list[dict[str, object]], out_dir: Path) -> Analysis:
+def write_report(
+    rows: list[dict[str, object]], out_dir: Path, *, term_boundaries: list[date] | tuple[date, ...] = ()
+) -> Analysis:
     out_dir.mkdir(parents=True, exist_ok=True)
-    analysis = analyze(rows)
+    analysis = analyze(rows, term_boundaries=term_boundaries)
     review = [row for row in rows if row.get("needs_review")]
     (out_dir / "index.html").write_text(_dashboard(analysis, review), encoding="utf-8")
     for student, slug in _student_slugs(analysis):
@@ -82,6 +84,7 @@ def _dashboard(analysis: Analysis, review: list[dict[str, object]]) -> str:
         <main>
           <p class="note">Low-grade alert means a recorded percent under 70, or a letter of D or F when the
           message has no percent. A letter is never converted into a percent. Charts use confirmed parses only.</p>
+          {_method_disclosure(analysis)}
           {"".join(sections)}
           <section class="card" id="review">
             <h2>Review queue</h2>
@@ -99,6 +102,11 @@ def _printable(student: str, analysis: Analysis) -> str:
     points.sort(key=lambda item: item.observed_on, reverse=True)
     omitted = max(0, len(points) - 8)
     shown = points[:8]
+    omitted_text = (
+        f"{omitted} older observation(s) remain on the local dashboard."
+        if omitted
+        else "No older confirmed observations are omitted from the table."
+    )
     prompts: list[str] = []
     for summary in summaries:
         prompts.extend(conversation_prompts(summary))
@@ -122,11 +130,13 @@ def _printable(student: str, analysis: Analysis) -> str:
              Generated {esc(date.today().isoformat())}.</p>
           <p class="note">These figures count alert emails and recorded scores.
              They are not a statement about ability.</p>
+          {_method_disclosure(analysis)}
           {_chart(summaries, width=700, height=180)}
           {_subject_table(summaries)}
           <h2>Recent observations</h2>
           {_point_table(shown)}
-          {f"<p>{omitted} older observations are on the local dashboard.</p>" if omitted else ""}
+          <p class="note">Print sampling: this page lists the {len(shown)} most recent confirmed observation(s)
+          out of {len(points)}. {omitted_text}</p>
           <h2>Questions to take to the meeting</h2>
           <ul>{prompt_html}</ul>
         </article>
@@ -146,6 +156,7 @@ def _subject_table(summaries: list[SubjectSummary]) -> str:
         rows.append(
             "<tr>"
             f"<td>{esc(item.subject)}</td>"
+            f"<td>{esc(item.term)}</td>"
             f"<td>{item.low_alert_count}</td>"
             f"<td>{esc(repeat)}</td>"
             f"<td>{esc(_fmt_percent(item.latest_percent))}</td>"
@@ -154,10 +165,10 @@ def _subject_table(summaries: list[SubjectSummary]) -> str:
             f"<td>{esc(windows)}</td>"
             "</tr>"
         )
-    body = "".join(rows) or "<tr><td colspan='7'>No confirmed observations.</td></tr>"
+    body = "".join(rows) or "<tr><td colspan='8'>No confirmed observations.</td></tr>"
     return (
         "<table><thead><tr>"
-        "<th>Subject</th><th>Low-grade alerts</th><th>Repeat trouble</th>"
+        "<th>Subject</th><th>Reporting segment</th><th>Low-grade alerts</th><th>Repeat trouble</th>"
         "<th>Latest percent</th><th>14-day average</th><th>Slope</th>"
         "<th>Low-grade alerts per 14-day window</th>"
         f"</tr></thead><tbody>{body}</tbody></table>"
@@ -170,6 +181,7 @@ def _point_table(points: list[Point]) -> str:
         rows.append(
             "<tr>"
             f"<td>{esc(point.observed_on.isoformat())}</td>"
+            f"<td>{esc(_date_basis(point.date_source))}</td>"
             f"<td>{esc(point.subject)}</td>"
             f"<td>{esc(point.assignment)}</td>"
             f"<td>{esc(point.category)}</td>"
@@ -179,9 +191,9 @@ def _point_table(points: list[Point]) -> str:
             f"<td>{'yes' if point.is_low else 'no'}</td>"
             "</tr>"
         )
-    body = "".join(rows) or "<tr><td colspan='8'>None.</td></tr>"
+    body = "".join(rows) or "<tr><td colspan='9'>None.</td></tr>"
     return (
-        "<table><thead><tr><th>Date</th><th>Subject</th><th>Assignment</th><th>Category</th>"
+        "<table><thead><tr><th>Date</th><th>Date basis</th><th>Subject</th><th>Assignment</th><th>Category</th>"
         "<th>Percent</th><th>Letter</th><th>Teacher</th><th>Low-grade alert</th>"
         f"</tr></thead><tbody>{body}</tbody></table>"
     )
@@ -202,6 +214,7 @@ def _review_table(review: list[dict[str, object]]) -> str:
         observed_text = observed.isoformat() if isinstance(observed, date) else ""
         rows.append(
             "<tr>"
+            f"<td>{esc(item.get('id'))}</td>"
             f"<td>{esc(_display_source(item.get('source')))}</td>"
             f"<td>{esc(_num(item.get('confidence')))}</td>"
             f"<td>{esc(item.get('pattern_id'))}</td>"
@@ -216,7 +229,7 @@ def _review_table(review: list[dict[str, object]]) -> str:
             "</tr>"
         )
     return (
-        "<table><thead><tr><th>Source</th><th>Confidence</th><th>Patterns</th><th>Student</th>"
+        "<table><thead><tr><th>ID</th><th>Source</th><th>Confidence</th><th>Patterns</th><th>Student</th>"
         "<th>Subject</th><th>Percent</th><th>Letter</th><th>Date</th><th>Why it is in review</th>"
         f"<th>Notes</th><th>Unparsed remainder</th></tr></thead><tbody>{''.join(rows)}</tbody></table>"
     )
@@ -225,7 +238,10 @@ def _review_table(review: list[dict[str, object]]) -> str:
 def _chart(summaries: list[SubjectSummary], width: int = 760, height: int = 280) -> str:
     dated = [point for item in summaries for point in item.points if point.percent is not None]
     if not dated:
-        return "<p>No percents to plot. Alerts without a percent stay in the table.</p>"
+        return (
+            "<p>No percents to plot. Alerts without a percent stay in the table. "
+            "Chart sampling: zero confirmed percent observations were available; no percent was invented.</p>"
+        )
     left, right, top, bottom = 36, 12, 12, 24
     plot_w = width - left - right
     plot_h = height - top - bottom
@@ -289,6 +305,13 @@ def _chart(summaries: list[SubjectSummary], width: int = 760, height: int = 280)
         "<p class='note'>Solid lines connect recorded percents. Dashed lines are the trailing 14-day average. "
         "The marked horizontal line is the 70 percent alert line.</p>"
     )
+    plotted = len(dated)
+    letter_only = sum(1 for item in summaries for point in item.points if point.percent is None and point.letter)
+    parts.append(
+        "<p class='note'>Chart sampling: every confirmed observation with a recorded percent in these reporting "
+        f"segments is a plotted dot ({plotted} total). {letter_only} confirmed letter-only alert(s) remain in the "
+        "tables but are not plotted as a made-up percent. Lines do not cross an explicit term boundary.</p>"
+    )
     return "".join(parts)
 
 
@@ -296,8 +319,9 @@ def _legend(summaries: list[SubjectSummary]) -> str:
     chips = []
     for index, summary in enumerate(summaries):
         color = _COLORS.get(summary.subject.lower(), _PALETTE[index % len(_PALETTE)])
+        label = esc(_series_label(summary.subject, summary.term))
         chips.append(
-            f"<span class='chip'><i style='background:{color}'></i>{esc(summary.subject)}</span>"
+            f"<span class='chip'><i style='background:{color}'></i>{label}</span>"
         )
     return f"<p class='legend'>{''.join(chips)}</p>" if chips else ""
 
@@ -385,6 +409,33 @@ def _num(value: object) -> str:
     if isinstance(value, (int, float)):
         return f"{float(value):.2f}"
     return ""
+
+
+def _method_disclosure(analysis: Analysis) -> str:
+    if analysis.term_boundaries:
+        starts = ", ".join(boundary.isoformat() for boundary in analysis.term_boundaries)
+        term_text = (
+            f"Reporting term boundaries start on {esc(starts)}. Trend metrics and chart lines are calculated "
+            "separately on either side of each boundary."
+        )
+    else:
+        term_text = "No reporting term boundaries were supplied; all confirmed dates are one reporting segment."
+    return (
+        "<p class='note'><strong>Date basis:</strong> a parsed body date is used when present. Otherwise, a "
+        "confirmed item may use the UTC calendar date from the message Date header; ambiguous body dates remain "
+        "in review. Local review resolutions are marked as such. "
+        f"<strong>Term basis:</strong> {term_text}</p>"
+    )
+
+
+def _date_basis(value: str | None) -> str:
+    if value == "body":
+        return "message body"
+    if value == "message-header":
+        return "message Date header (UTC)"
+    if value == "local-review-resolution":
+        return "local review resolution"
+    return "not recorded"
 
 
 def _slug(name: str) -> str:

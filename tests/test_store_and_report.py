@@ -1,5 +1,6 @@
 import threading
 import urllib.request
+from datetime import date
 from pathlib import Path
 
 from gradelinktrendline.cli import main, make_server
@@ -106,6 +107,65 @@ def test_cli_ingest_and_report(tmp_path: Path):
     assert main(["report", "--db", str(db), "--out", str(out)]) == 0
     assert (out / "index.html").exists()
     assert main(["ingest", str(tmp_path / "missing"), "--db", str(db)]) == 1
+
+
+def test_review_resolution_is_explicit_and_preserves_the_parser_record(tmp_path: Path):
+    db = tmp_path / "glt.sqlite"
+    assert main(["ingest", str(FIXTURES), "--db", str(db)]) == 0
+    store = Store(db)
+    try:
+        unresolved = store.review_rows()
+        target = next(row for row in unresolved if row["student"] is None)
+        target_id = int(target["id"])
+    finally:
+        store.close()
+
+    assert main(
+        [
+            "resolve-review",
+            str(target_id),
+            "--db",
+            str(db),
+            "--student",
+            "Student A",
+            "--subject",
+            "Penmanship",
+            "--date",
+            "2026-10-04",
+            "--percent",
+            "60",
+            "--rationale",
+            "Confirmed against the original school notice during local review.",
+        ]
+    ) == 0
+
+    store = Store(db)
+    try:
+        resolved = next(row for row in store.observation_rows() if row["id"] == target_id)
+        assert target_id not in {row["id"] for row in store.review_rows()}
+    finally:
+        store.close()
+    assert resolved["needs_review"] is False
+    assert resolved["student"] == "Student A"
+    assert resolved["date_source"] == "local-review-resolution"
+    assert resolved["original_review_reasons"]
+    assert "Locally resolved review item" in resolved["notes"][-1]
+
+
+def test_report_discloses_term_boundaries_date_basis_and_sampling(tmp_path: Path):
+    store = _ingest(tmp_path)
+    rows = store.observation_rows()
+    store.close()
+    out = tmp_path / "reports"
+    analysis = write_report(rows, out, term_boundaries=[date(2026, 9, 15)])
+    index = (out / "index.html").read_text(encoding="utf-8")
+    summary = (out / "summary-student-a.html").read_text(encoding="utf-8")
+    assert analysis.term_boundaries == (date(2026, 9, 15),)
+    assert "Reporting term boundaries start on 2026-09-15" in index
+    assert "Date basis:" in index
+    assert "message Date header (UTC)" in summary
+    assert "Chart sampling:" in summary
+    assert "Print sampling:" in summary
 
 
 def test_serve_refuses_non_loopback(tmp_path: Path):

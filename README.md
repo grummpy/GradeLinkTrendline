@@ -83,6 +83,29 @@ Confirmed observations, per student and subject:
 
 `glt report` also writes a one-page sheet per student for a parent-teacher or tutor conversation: subject table, the latest observations, and a few questions about assignments and categories. Older rows stay on the dashboard so the sheet can stay on one page.
 
+## Review resolution and reporting boundaries
+
+The review queue is intentionally separate from the trends. List its local item ids with:
+
+```bash
+glt review
+```
+
+After checking the original notice, a parent can save an explicit local resolution. The command requires a final student, subject, ISO date, one grade signal, and a rationale; it never overwrites the parser's original row or raw message.
+
+```bash
+glt resolve-review 12 --student "Student A" --subject Math --date 2026-10-04 \
+  --percent 64 --rationale "Confirmed against the original school notice."
+```
+
+Report terms are never inferred from a score or a gap in mail. If a report spans known term changes, pass each start date explicitly. Trend lines, rolling averages, slopes, repeat flags, and 14-day windows then stay inside each reporting segment.
+
+```bash
+glt report --term-boundary 2026-01-12 --term-boundary 2026-08-17
+```
+
+Reports say whether a date came from the message body, the UTC calendar date of a message header, or an explicit local review resolution. They also disclose that charts plot every confirmed percent while printable sheets list only the eight most recent confirmed observations.
+
 ## Optional Gmail fetch
 
 This does not run during ingest.
